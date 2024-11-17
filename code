@@ -1,0 +1,80 @@
+!pip install pillow numpy
+
+from google.colab import drive
+drive.mount('/content/drive')
+
+from google.colab import files
+uploaded = files.upload()
+
+from PIL import Image
+import numpy as np
+
+# Function to swap pixel channels (e.g., R and G)
+def swap_channels(image_array):
+    encrypted_array = image_array.copy()
+    # Swap red and green channels (you can swap other channels as needed)
+    encrypted_array[..., 0], encrypted_array[..., 1] = encrypted_array[..., 1], encrypted_array[..., 0].copy()
+    return encrypted_array
+
+# Function to apply a mathematical operation (e.g., XOR with a key)
+def apply_operation(image_array, key):
+    encrypted_array = (image_array ^ key) % 256  # XOR each pixel value with a key, ensuring values remain in 0-255 range
+    return encrypted_array
+
+# Encrypt the image
+def encrypt_image(image_path, key, output_path):
+    # Open the image and convert it to an array
+    image = Image.open(image_path)
+    image_array = np.array(image)
+
+    # Step 1: Swap pixel channels
+    encrypted_array = swap_channels(image_array)
+
+    # Step 2: Apply mathematical operation
+    encrypted_array = apply_operation(encrypted_array, key)
+
+    # Convert the array back to an image and save it
+    encrypted_image = Image.fromarray(encrypted_array.astype('uint8'))
+    encrypted_image.save(output_path)
+    print(f"Encrypted image saved to {output_path}")
+
+# Decrypt the image
+def decrypt_image(image_path, key, output_path):
+    # Open the encrypted image and convert it to an array
+    image = Image.open(image_path)
+    image_array = np.array(image)
+
+    # Reverse Step 2: Apply inverse mathematical operation
+    decrypted_array = apply_operation(image_array, key)
+
+    # Reverse Step 1: Swap pixel channels back
+    decrypted_array = swap_channels(decrypted_array)
+
+    # Convert the array back to an image and save it
+    decrypted_image = Image.fromarray(decrypted_array.astype('uint8'))
+    decrypted_image.save(output_path)
+    print(f"Decrypted image saved to {output_path}")
+
+# Set paths and key
+input_image_path = 'cyb_img.jpg'  # This is the uploaded image name
+encrypted_image_path = 'encrypted.jpg'
+decrypted_image_path = 'decrypted.jpg'
+
+# Encryption key
+encryption_key = 123  # You can change this value
+
+
+# Encrypt the image
+encrypt_image(input_image_path, encryption_key, encrypted_image_path)
+
+from PIL import Image
+img = Image.open(encrypted_image_path)
+img.show()
+
+# Decrypt the image
+decrypt_image(encrypted_image_path, encryption_key, decrypted_image_path)
+
+
+from google.colab import files
+files.download(encrypted_image_path)  # To download the encrypted image
+files.download(decrypted_image_path)  # To download the decrypted image
